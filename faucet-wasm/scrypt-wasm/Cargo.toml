@@ -1,0 +1,12 @@
+[package]
+name = "scrypt-wasm"
+version = "0.1.1"
+authors = ["Kosala Hemachandra <kvhnuke@aol.com>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+scrypt = { version = "0.2", default-features = false }
+hex = "0.4"
