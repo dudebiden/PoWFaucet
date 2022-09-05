@@ -1,11 +1,12 @@
 
 import { PoWWorker } from "./worker/PoWWorker";
-import { getScrypt, getScryptReadyPromise, Scrypt } from "../../libs/scrypt_wasm";
+import { getScrypt, getScryptMine, getScryptReadyPromise, Scrypt } from "../../libs/scrypt_wasm";
 
 (() => {
   getScryptReadyPromise().then(() => {
-    new PoWWorker({
-      scrypt: getScrypt()
+    (globalThis as any).powWorker = new PoWWorker({
+      scrypt: getScrypt(),
+      mine: getScryptMine(),
     });
   })
 })();

@@ -1,9 +1,10 @@
 import { IPoWParams } from "../common/IFaucetConfig";
-import { Scrypt } from "../../../libs/scrypt_wasm";
+import { Scrypt, ScryptMine } from "../../../libs/scrypt_wasm";
 import { base64ToHex } from "../utils/ConvertHelpers";
 
 export interface IPoWWorkerOptions {
   scrypt: Scrypt;
+  mine: ScryptMine;
 }
 
 interface IPoWWorkerParams extends IPoWParams {

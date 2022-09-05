@@ -16,6 +16,9 @@ lines = lines.map(line => {
   if(line.startsWith("export function scrypt")) {
     return line.replace("export function scrypt", "scrypt = function");
   }
+  else if(line.startsWith("export function mine")) {
+    return line.replace("export function mine", "mine = function");
+  }
   return line;
 });
 const customWASMWrappperJS = lines.join("\n");
@@ -30,11 +33,12 @@ console.log(`
 // Don't edit this file by hand. 
 // Edit the build located in the faucet-wasm folder.
 
-let scrypt;
+let scrypt, mine;
 let scryptPromise;
 
 module.exports = {
   getScrypt: function() { return scrypt; },
+  getScryptMine: function() { return mine; },
   getScryptReadyPromise: function() { return scryptPromise; }
 };
 
