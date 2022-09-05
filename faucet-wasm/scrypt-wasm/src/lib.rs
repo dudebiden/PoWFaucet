@@ -34,7 +34,7 @@ pub fn scrypt(password: &str, salt: &str, n: u32, r: u32, p: u32, dklen: usize) 
 }
 
 #[wasm_bindgen]
-pub fn mine(start: u32, end: u32, difficulty: u32, salt: &str, n: u32, r: u32, p: u32, dklen: usize) -> String {
+pub fn mine(start: u64, end: u64, difficulty: u32, salt: &str, n: u32, r: u32, p: u32, dklen: usize) -> String {
     let err_str = String::from("input Error");
     let log_n = (32 - n.leading_zeros() - 1) as u8;
     if log_n as u32 >= r * 16 {
@@ -54,10 +54,10 @@ pub fn mine(start: u32, end: u32, difficulty: u32, salt: &str, n: u32, r: u32, p
     };
 
     let diff_bytes = difficulty / 8;
-    let diff_mask = 1 << (difficulty - (diff_bytes * 8));
+    let diff_mask = 1 << (8 - (difficulty - (diff_bytes * 8)));
 
     for index in start..end {
-        let pass_: [u8; 4] = unsafe { transmute(index.to_be()) };
+        let pass_: [u8; 8] = unsafe { transmute(index.to_be()) };
         scrypt::scrypt(&pass_, &salt_, &params, &mut result).expect("Error executing scrypt");
 
         let mut valid = true;
@@ -67,7 +67,7 @@ pub fn mine(start: u32, end: u32, difficulty: u32, salt: &str, n: u32, r: u32, p
                 break;
             }
         }
-        if valid && result[diff_bytes as usize] < diff_mask {
+        if valid && (diff_mask == 0 || result[diff_bytes as usize] < diff_mask) {
             return format!("{}|{}", index, hex::encode(result));
         }
     }

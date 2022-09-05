@@ -18,6 +18,8 @@ interface IPoWWorkerNonceRange {
   count: number;
 }
 
+const MINING_BATCH_SIZE = 8;
+
 export class PoWWorker {
   private options: IPoWWorkerOptions;
   private workerId: number;
@@ -172,9 +174,8 @@ export class PoWWorker {
   private workLoop() {
     if(!this.working)
       return;
-    for(var i = 0; i < 8; i++) {
-      this.work();
-    }
+    this.work();
+
     let tout = (this.nonceRanges.length === 0 ? 20 : 0);
     setTimeout(() => this.workLoop(), tout);
   }
@@ -183,8 +184,12 @@ export class PoWWorker {
     let rangeCount = this.nonceRanges.length;
     if(rangeCount === 0)
       return;
-    let nonce = this.workNonce++;
-    if(nonce >= this.nonceRanges[0].last) {
+    let startNonce = this.workNonce;
+    let endNonce = this.nonceRanges[0].last;
+    if(endNonce - startNonce > MINING_BATCH_SIZE - 1)
+      endNonce = startNonce + (MINING_BATCH_SIZE - 1);
+
+    if(endNonce == this.nonceRanges[0].last) {
       this.nonceRanges.splice(0, 1);
       if(rangeCount === 1) {
         console.log("[PoWMiner] Ran out of nonce ranges!");
@@ -192,18 +197,37 @@ export class PoWWorker {
         this.workNonce = this.nonceRanges[0].first;
       }
     }
+    else {
+      this.workNonce = endNonce+1;
+    }
+    //console.log("[Miner " + this.workerId + "] nonce range " + startNonce + " to " + endNonce + " (" + (endNonce - startNonce + 1) + ")");
 
-    let hash: string;
-    if((hash = this.checkHash(nonce, this.powPreImage))) {
+    let workNonce = startNonce;
+    do {
+      let result = this.options.mine(
+        BigInt(workNonce),
+        BigInt(endNonce + 1),
+        this.powParams.d,
+        this.powPreImage, 
+        this.powParams.n, 
+        this.powParams.r, 
+        this.powParams.p, 
+        this.powParams.l
+      ).split("|");
+      if(result.length !== 2)
+        break;
+
       // found a nonce! :>
+      workNonce = parseInt(result[0]) + 1;
       postMessage({
         action: "nonce",
         data: {
-          nonce: nonce,
+          nonce: result[0],
           params: this.powParams.pstr,
         }
       });
-    }
+    } while(workNonce < endNonce);
+    this.statsCount += endNonce - startNonce + 1;
   }
 
   private checkHash(nonce: number, preimg: string): string {
